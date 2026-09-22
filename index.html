@@ -10,123 +10,182 @@
         body {
             background-color: #0d1f15;
             display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; color: #e0f2e9;
+            min-height: 100vh; color: #e0f2e9; padding: 20px;
         }
 
+        /* 主容器：上下结构 */
         #game-container {
-            width: 960px; height: 640px;
+            width: 800px;
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
             background: linear-gradient(135deg, #1a2f22 0%, #0d1f15 100%);
-            border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 0 2px #2a4a36 inset;
-            overflow: hidden; position: relative;
-            display: flex; flex-direction: column;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 0 2px #2a4a36 inset;
+            overflow: hidden;
         }
 
-        /* 背景层 */
-        .bg-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        /* 顶部：图片展示区 */
+        .top-section {
+            position: relative;
+            width: 100%;
+            height: 380px;
             background-image: url('https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=1000&auto=format&fit=crop');
-            background-size: cover; background-position: center;
-            opacity: 0.3; z-index: 0;
-            filter: blur(2px) brightness(0.6) hue-rotate(50deg);
-            transition: filter 0.5s;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            overflow: hidden;
         }
 
-        /* 角色立绘容器 */
-        .character-area {
-            position: absolute; right: 20px; bottom: 180px;
-            width: 320px; height: 420px;
-            z-index: 1; border-radius: 15px; overflow: hidden;
-            border: 2px dashed #4a8c63; background: rgba(0,0,0,0.3);
-            display: flex; justify-content: center; align-items: center;
-            transition: all 0.5s ease;
+        /* 背景滤镜 */
+        .top-section::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(13,31,21,1) 0%, rgba(13,31,21,0.4) 50%, rgba(13,31,21,0.6) 100%);
+            z-index: 1;
+            transition: all 0.5s;
         }
 
-        .character-area img {
-            width: 100%; height: 100%; object-fit: cover; display: none;
+        /* 立绘图片 */
+        #char-img {
+            position: relative;
+            z-index: 2;
+            max-height: 95%;
+            max-width: 90%;
+            object-fit: contain;
+            display: none;
+            filter: drop-shadow(0 0 20px rgba(0,0,0,0.8));
+            transition: transform 0.5s ease;
         }
 
-        .character-area .placeholder-text {
-            color: #8ce0b0; text-align: center; font-size: 0.9rem; padding: 20px;
+        #char-img:hover { transform: scale(1.02); }
+
+        /* 占位提示 */
+        .placeholder-text {
+            position: relative;
+            z-index: 2;
+            color: #8ce0b0;
+            text-align: center;
+            font-size: 0.95rem;
+            padding: 30px;
+            border: 2px dashed #4a8c63;
+            border-radius: 16px;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(4px);
+            margin-bottom: 40px;
         }
 
-        /* 上传按钮 */
-        #upload-btn-wrapper {
-            position: absolute; top: 20px; right: 20px; z-index: 5;
+        /* 顶部按钮组 */
+        .top-buttons {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 5;
+            display: flex;
+            gap: 8px;
         }
 
-        .upload-btn {
+        .btn {
             background: rgba(26, 47, 34, 0.9);
             border: 1px solid #4a8c63;
-            color: #8ce0b0; padding: 8px 15px;
-            border-radius: 8px; cursor: pointer;
-            font-size: 0.85rem; transition: all 0.3s;
-            backdrop-filter: blur(4px);
+            color: #8ce0b0;
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+            backdrop-filter: blur(6px);
+            white-space: nowrap;
         }
-        .upload-btn:hover { background: #2a5a3a; color: #fff; border-color: #8ce0b0; }
 
-        /* 存档按钮组 */
-        .save-group {
-            position: absolute; top: 20px; right: 140px; z-index: 5;
-            display: flex; gap: 8px;
+        .btn:hover {
+            background: #2a5a3a;
+            color: #fff;
+            border-color: #8ce0b0;
+            box-shadow: 0 0 12px rgba(140, 224, 176, 0.4);
         }
 
         /* 状态栏 */
         #status-bar {
-            position: absolute; top: 20px; left: 20px; z-index: 3;
-            background: rgba(13, 31, 21, 0.8);
-            padding: 8px 15px; border-radius: 20px;
-            border: 1px solid #3a6b4b; font-size: 0.9rem;
-            color: #8ce0b0; backdrop-filter: blur(4px);
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 5;
+            background: rgba(13, 31, 21, 0.85);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid #3a6b4b;
+            font-size: 0.85rem;
+            color: #8ce0b0;
+            backdrop-filter: blur(6px);
         }
 
-        /* 文本框 */
-        .text-box {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 210px;
-            background: linear-gradient(to top, rgba(13, 31, 21, 0.98) 0%, rgba(13, 31, 21, 0.8) 80%, transparent 100%);
-            z-index: 2; padding: 25px 40px 20px;
-            display: flex; flex-direction: column; justify-content: flex-end;
-            border-top: 2px solid #3a6b4b; backdrop-filter: blur(6px);
+        /* 底部：文本与选项区 */
+        .bottom-section {
+            width: 100%;
+            padding: 24px 32px 28px;
+            background: rgba(13, 31, 21, 0.98);
+            border-top: 2px solid #3a6b4b;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         #speaker {
-            color: #8ce0b0; font-weight: bold; font-size: 1.2rem;
-            margin-bottom: 8px; text-shadow: 0 0 10px rgba(140, 224, 176, 0.5);
+            color: #8ce0b0;
+            font-weight: bold;
+            font-size: 1.15rem;
+            text-shadow: 0 0 10px rgba(140, 224, 176, 0.5);
+            letter-spacing: 1px;
         }
 
         #dialogue {
-            font-size: 1.05rem; line-height: 1.6; color: #e0f2e9;
-            min-height: 3.5em; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            font-size: 1rem;
+            line-height: 1.7;
+            color: #e0f2e9;
+            min-height: 3.5em;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
         }
 
-        /* 选项区 */
         #choices {
-            display: flex; flex-direction: column; gap: 8px;
-            margin-top: 10px; width: 70%; margin-left: auto; margin-right: auto; z-index: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 4px;
         }
 
         .choice-btn {
             background: rgba(26, 47, 34, 0.85);
             border: 1px solid #4a8c63;
-            color: #c1e6d3; padding: 10px 20px;
-            border-radius: 8px; cursor: pointer;
-            transition: all 0.3s ease; font-size: 0.95rem;
-            text-align: left; backdrop-filter: blur(4px);
+            color: #c1e6d3;
+            padding: 12px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            text-align: left;
+            backdrop-filter: blur(4px);
         }
 
         .choice-btn:hover {
-            background: #2a5a3a; border-color: #8ce0b0;
-            color: #ffffff; box-shadow: 0 0 15px rgba(140, 224, 176, 0.5);
-            transform: translateX(5px);
+            background: #2a5a3a;
+            border-color: #8ce0b0;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(140, 224, 176, 0.5);
+            transform: translateX(6px);
         }
 
-        /* 强迫性唯一选项的样式 */
+        /* 锁定唯一选项 */
         .choice-btn.locked {
             background: rgba(60, 20, 20, 0.9);
-            border-color: #8b3a3a; color: #ffcccc;
+            border-color: #8b3a3a;
+            color: #ffcccc;
             cursor: not-allowed;
             animation: pulseRed 1.5s infinite;
             font-weight: bold;
+            text-align: center;
         }
         .choice-btn.locked:hover { transform: none; box-shadow: none; }
 
@@ -136,10 +195,11 @@
             100% { box-shadow: 0 0 0px rgba(139, 58, 58, 0); }
         }
 
-        /* 隐藏的文件输入 */
+        /* 隐藏文件输入 */
         #file-upload { display: none; }
 
-        /* 心跳动画 */
+        /* 结局动画 */
+        .glow-text { color: #b3ffd9; text-shadow: 0 0 15px rgba(140, 224, 176, 0.9); }
         .heart-beat { animation: heartbeat 1.5s infinite; }
         @keyframes heartbeat {
             0% { transform: scale(1); }
@@ -147,49 +207,53 @@
             100% { transform: scale(1); }
         }
 
-        .glow-text { color: #b3ffd9; text-shadow: 0 0 15px rgba(140, 224, 176, 0.9); }
+        /* 移动端适配 */
+        @media (max-width: 600px) {
+            .top-section { height: 260px; }
+            .bottom-section { padding: 18px 20px 22px; }
+            #dialogue { font-size: 0.95rem; }
+            .btn { padding: 6px 10px; font-size: 0.75rem; }
+            #status-bar { font-size: 0.75rem; padding: 6px 12px; }
+        }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div class="bg-layer" id="bg-layer"></div>
-    
-    <div id="status-bar">好感度: <span id="favor">0</span>% | 路线: 对抗</div>
-
-    <!-- 角色立绘区域 -->
-    <div class="character-area" id="character-area">
-        <div class="placeholder-text" id="placeholder-text">请点击右上角<br>「上传泽禹照片」<br>（仅本地显示）</div>
+    <!-- 上半部分：图片展示 -->
+    <div class="top-section" id="top-section">
+        <div class="top-buttons">
+            <button class="btn" onclick="document.getElementById('file-upload').click()">📷 上传照片</button>
+            <button class="btn" onclick="saveGame()">💾 存档</button>
+            <button class="btn" onclick="loadGame()">📂 读档</button>
+        </div>
+        <div id="status-bar">好感度: <span id="favor">0</span>% | 路线: 对抗</div>
+        
+        <div class="placeholder-text" id="placeholder-text">
+            点击右上角「上传照片」<br>把张泽禹放进来吧
+        </div>
         <img id="char-img" alt="张泽禹">
     </div>
 
-    <!-- 上传与存档按钮 -->
-    <div id="upload-btn-wrapper">
-        <button class="upload-btn" onclick="document.getElementById('file-upload').click()">📷 上传泽禹照片</button>
-        <input type="file" id="file-upload" accept="image/*">
-    </div>
-
-    <div class="save-group">
-        <button class="upload-btn" onclick="saveGame()">💾 存档</button>
-        <button class="upload-btn" onclick="loadGame()">📂 读档</button>
-    </div>
-
-    <div class="text-box" id="text-box">
+    <!-- 下半部分：文本与选项 -->
+    <div class="bottom-section" id="bottom-section">
         <div id="speaker">张泽禹</div>
         <div id="dialogue">“别碰我东西。就算你妈嫁进来了，你也别想管我叫哥。”</div>
         <div id="choices"></div>
     </div>
 </div>
 
+<input type="file" id="file-upload" accept="image/*">
+
 <script>
-    // 游戏核心状态
+    // ========== 状态 ==========
     let state = {
         favor: 0,
         sceneId: "start",
         phase: "对抗"
     };
 
-    // DOM
+    // ========== DOM ==========
     const dialogueEl = document.getElementById('dialogue');
     const speakerEl = document.getElementById('speaker');
     const choicesEl = document.getElementById('choices');
@@ -197,10 +261,10 @@
     const statusBar = document.getElementById('status-bar');
     const charImg = document.getElementById('char-img');
     const placeholderText = document.getElementById('placeholder-text');
-    const bgLayer = document.getElementById('bg-layer');
-    const textBox = document.getElementById('text-box');
+    const topSection = document.getElementById('top-section');
+    const bottomSection = document.getElementById('bottom-section');
 
-    // ============ 本地图片上传 ============
+    // ========== 图片上传 ==========
     document.getElementById('file-upload').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
@@ -214,7 +278,7 @@
         }
     });
 
-    // ============ 存档/读档 ============
+    // ========== 存档 / 读档 ==========
     function saveGame() {
         const saveData = {
             favor: state.favor,
@@ -243,7 +307,7 @@
         renderScene(data.sceneId);
     }
 
-    // ============ 剧情数据 ============
+    // ========== 剧情 ==========
     const story = {
         start: {
             speaker: "张泽禹",
@@ -278,7 +342,6 @@
                 { text: "轻轻推开他：“我们这样……不太好吧？”", next: "obsession_1", favor: 5 }
             ]
         },
-        // ============ 开始强迫选择阶段 ============
         obsession_1: {
             speaker: "张泽禹",
             text: "从那天起，他变了。\n他开始疯狂地查你的手机，不允许你和任何男生说话。某天放学，你发现他把你锁在他的房间里。他眼神阴暗，手指摩挲着你的脖颈：“外面的人都不怀好意……你只能待在我身边，哪也别去。”",
@@ -288,7 +351,6 @@
                 { text: "试图和他讲道理。", next: "obsession_force", favor: 0 }
             ]
         },
-        // ============ 强制唯一选项 ============
         obsession_force: {
             speaker: "张泽禹",
             text: "“讲道理？”他轻笑一声，扣住你的手腕，将你拉近。\n“我不管什么道理。我只要你。”他的呼吸打在你脸上，眼底是深不见底的偏执。你意识到，所有的退路都被他堵死了。",
@@ -312,14 +374,14 @@
         }
     };
 
-    // ============ 渲染逻辑 ============
+    // ========== 渲染 ==========
     function renderScene(sceneId) {
         const scene = story[sceneId];
         if (!scene) return;
 
         state.sceneId = sceneId;
 
-        // 好感度更新
+        // 好感度
         if (scene.favor !== undefined) {
             state.favor += scene.favor;
             if (state.favor < 0) state.favor = 0;
@@ -327,56 +389,47 @@
             favorEl.textContent = state.favor;
         }
 
-        // 阶段变化
+        // 阶段与氛围
         if (state.favor < 30) {
             state.phase = "对抗";
             statusBar.innerHTML = `好感度: ${state.favor}% | 路线: 对抗`;
-            bgLayer.style.filter = "blur(2px) brightness(0.6) hue-rotate(50deg)";
+            topSection.style.filter = "brightness(0.9) hue-rotate(30deg)";
         } else if (state.favor < 70) {
             state.phase = "甜蜜";
             statusBar.innerHTML = `好感度: ${state.favor}% | 路线: 甜蜜`;
-            bgLayer.style.filter = "blur(2px) brightness(0.7) hue-rotate(50deg) saturate(1.2)";
+            topSection.style.filter = "brightness(1) hue-rotate(20deg) saturate(1.1)";
         } else {
             state.phase = "占有";
             statusBar.innerHTML = `好感度: ${state.favor}% | 路线: 占有`;
-            bgLayer.style.filter = "blur(3px) brightness(0.4) hue-rotate(50deg) contrast(1.2)";
+            topSection.style.filter = "brightness(0.7) hue-rotate(50deg) contrast(1.2)";
         }
 
-        // 文本渲染
+        // 文本
         speakerEl.textContent = scene.speaker;
         dialogueEl.textContent = scene.text;
 
         // 结局特效
         if (sceneId.includes("end")) {
             dialogueEl.classList.add("glow-text");
-            textBox.classList.add("heart-beat");
+            bottomSection.classList.add("heart-beat");
         } else {
             dialogueEl.classList.remove("glow-text");
-            textBox.classList.remove("heart-beat");
+            bottomSection.classList.remove("heart-beat");
         }
 
-        // 选项渲染
+        // 选项
         choicesEl.innerHTML = '';
-        scene.choices.forEach((choice, index) => {
+        scene.choices.forEach(choice => {
             const btn = document.createElement('button');
             btn.className = 'choice-btn';
-            
-            // 判断是否是锁定选项
             if (choice.locked) {
                 btn.classList.add('locked');
-                // 如果只有一个选项，直接给它加上呼吸红光效果
                 if (scene.choices.length === 1) {
                     btn.style.animation = "pulseRed 1.5s infinite";
                 }
             }
-
             btn.textContent = choice.text;
             btn.onclick = () => {
-                // 如果是锁定选项，做一个额外的反馈（可选）
-                if (choice.locked) {
-                    // 直接推进，不需要额外逻辑，但可以加一点视觉反馈
-                }
-                
                 if (choice.favor !== undefined) {
                     state.favor += choice.favor;
                     if (state.favor < 0) state.favor = 0;
@@ -389,10 +442,8 @@
         });
     }
 
-    // 启动游戏
+    // 启动
     renderScene(state.sceneId);
-
-    // 提示：如果用户上传了图片，存档时会保存图片的Base64数据，读档时自动恢复
 </script>
 </body>
-      </html>
+</html>

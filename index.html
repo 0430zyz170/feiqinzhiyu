@@ -21,7 +21,7 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 0 2px #2a4a36 inset;
             overflow: hidden;
             max-height: 95vh;
-            transition: all 0.5s ease;
+            transition: opacity 0.5s ease;
         }
         .top-section {
             position: relative; width: 100%; height: 200px;
@@ -218,6 +218,32 @@
             osc.stop(audioCtx.currentTime + i * 0.3 + 0.25);
         }
     }
+    // 黑屏“我爱你”专属音效（低频压迫 + 快速心跳）
+    function playBlackoutSound() {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.connect(gain1); gain1.connect(audioCtx.destination);
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(70, now);
+        osc1.frequency.exponentialRampToValueAtTime(28, now + 1.5);
+        gain1.gain.setValueAtTime(0.15, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+        osc1.start(now); osc1.stop(now + 1.8);
+
+        for (let i = 0; i < 4; i++) {
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.connect(gain2); gain2.connect(audioCtx.destination);
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(55, now + i * 0.28);
+            gain2.gain.setValueAtTime(0.2, now + i * 0.28);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + i * 0.28 + 0.22);
+            osc2.start(now + i * 0.28);
+            osc2.stop(now + i * 0.28 + 0.25);
+        }
+    }
 
     // ========== 状态 ==========
     let state = { favor: 0, sceneId: "start", phase: "对抗" };
@@ -271,9 +297,9 @@
         renderScene(data.sceneId);
     }
 
-    // ================= 扩充后的剧情（结局保持不变） =================
+    // ================= 剧情树（强化占有欲 + 黑屏易触发） =================
     const story = {
-        // ========== 起始：林间初遇 ==========
+        // ========== 起始 ==========
         start: {
             speaker: "张泽禹",
             text: "“别碰我东西。就算你妈嫁进来了，你也别想管我叫哥。”\n他在林间小路上猛地回头，那头白发在绿叶中格外刺眼。他穿着黑色背心，背着登山包，眼神里满是桀骜不驯。你妈刚嫁进张家，这是你第一次和他单独相处。",
@@ -284,7 +310,7 @@
             ]
         },
 
-        // ========== 对抗线（扩充） ==========
+        // ========== 对抗线 ==========
         cold_1: {
             speaker: "张泽禹",
             text: "他愣了一下，随即冷笑：“嘴挺硬。”\n他加快步伐，像是要把你甩掉。可你发现，每次遇到陡坡，他都会悄无声息地放慢脚步。走到一处悬崖边，他忽然回头：“走不动就直说，别硬撑。”",
@@ -326,7 +352,7 @@
             ]
         },
 
-        // ========== 沉默跟随线（扩充） ==========
+        // ========== 沉默线 ==========
         silent_1: {
             speaker: "张泽禹",
             text: "你没回嘴，只是默默跟在他身后。\n走了一段，他忽然停下来：“你怎么不说话？”你看着他，他反倒不自在了，别开脸：“……哑巴了？”",
@@ -344,7 +370,7 @@
             ]
         },
 
-        // ========== 触碰线（甜蜜，扩充） ==========
+        // ========== 触碰线 ==========
         touch_1: {
             speaker: "张泽禹",
             text: "你伸手，指尖碰到他蓬松的白发，轻轻把那片绿叶拿下来。\n他整个人僵住了，耳朵肉眼可见地变红。“你……”他想说什么，却卡在喉咙里。山风吹过，你们之间的距离近得能听见彼此的呼吸。",
@@ -378,7 +404,7 @@
             ]
         },
 
-        // ========== 甜蜜线（扩充） ==========
+        // ========== 甜蜜线 ==========
         sweet_1: {
             speaker: "张泽禹",
             text: "天色渐暗，你们在山上露营。他递给你一杯热水，眼神飘忽：“老头让我照顾你，别多想。”\n火光映着他的侧脸。那个对你冷言冷语的人，此刻正悄悄把外套披在你肩上。",
@@ -412,7 +438,7 @@
             ]
         },
 
-        // ========== 占有线（扩充） ==========
+        // ========== 占有线（强化） ==========
         obsession_1: {
             speaker: "张泽禹",
             text: "从那天起，他变了。\n他开始在意你和谁说话，在意你几点回家。某天你发现他坐在你床边，翻着你的手机。“你干嘛？”你问。他抬头，眼神里是藏不住的慌张：“……你别离开我。”",
@@ -458,13 +484,13 @@
             speaker: "张泽禹",
             text: "某天放学，你发现门打不开了。\n他坐在房间里，钥匙攥在手里。“外面的人都不怀好意。”他眼神暗下来，手指摩挲着你的脖颈，“你只能待在我身边，哪也别去。”",
             choices: [
-                { text: "“你疯了，放我出去！”", next: "obsession_break", favor: -10 },
+                { text: "“你疯了，放我出去！”", next: "obsession_force", favor: -10 },
                 { text: "“好，只要是你，我就留下。”", next: "end_married", favor: 25 },
                 { text: "试图和他讲道理。", next: "obsession_force", favor: 0 }
             ]
         },
 
-        // ========== 强制唯一选项：黑屏我爱你 ==========
+        // ========== 强制黑屏节点（容易触发） ==========
         obsession_force: {
             speaker: "张泽禹",
             text: "“讲道理？”他轻笑一声，扣住你的手腕，将你拉近。\n“我不管什么道理。我只要你。”他的呼吸打在你脸上，眼底是深不见底的偏执。你意识到，所有的退路都被他堵死了。",
@@ -476,11 +502,22 @@
             speaker: "张泽禹",
             text: "屏幕陷入黑暗。\n红色的字迹从四面八方涌来，像血一样铺满整个视野——\n“我爱你。”“我爱你。”“我爱你。”“我爱你。”“我爱你。”“我爱你。”“我爱你。”\n你逃不掉了。他从背后抱住你，下巴抵在你肩上，声音温柔得令人战栗：“现在，你是我一个人的了。”",
             choices: [
-                { text: "【接受】成为他的人。", next: "end_married", favor: 20, blackout: true }
-            ]
+                { text: "【接受】成为他的人。", next: "end_married", favor: 20 }
+            ],
+            onEnter: () => {
+                playBlackoutSound();
+                document.body.classList.add('blackout');
+                gameContainer.style.opacity = "0";
+                blackoutOverlay.classList.add('active');
+                setTimeout(() => {
+                    blackoutOverlay.classList.remove('active');
+                    document.body.classList.remove('blackout');
+                    gameContainer.style.opacity = "1";
+                }, 3200);
+            }
         },
 
-        // ========== 独立结局（保持不变） ==========
+        // ========== 结局 ==========
         end_distant: {
             speaker: "旁白",
             text: "一路上你们再没说一句话。\n回到家，他径直回了房间，门关得很重。之后的日子，你们像两条平行线，他不再管你，你也不再招惹他。偶尔在饭桌上对视，他会先移开视线。\n有些话没说出口，就再也没机会说了。【渐行渐远·擦肩线】",
@@ -512,6 +549,9 @@
     function renderScene(sceneId) {
         const scene = story[sceneId];
         if (!scene) return;
+
+        // 进入节点时触发 onEnter（黑屏音效）
+        if (scene.onEnter) scene.onEnter();
 
         if (sceneId === "start") {
             state.favor = 0;
@@ -545,6 +585,7 @@
             }
         }
 
+        // 阶段与氛围
         if (state.favor < 30) {
             state.phase = "对抗";
             statusBar.innerHTML = `好感度: ${state.favor}% | 对抗`;
@@ -571,6 +612,7 @@
             bottomSection.classList.remove("heart-beat");
         }
 
+        // 渲染选项
         choicesEl.innerHTML = '';
         scene.choices.forEach(choice => {
             const btn = document.createElement('button');
@@ -583,19 +625,6 @@
             }
             btn.textContent = choice.text;
             btn.onclick = () => {
-                if (choice.blackout) {
-                    playTenseSound();
-                    document.body.classList.add('blackout');
-                    gameContainer.style.opacity = "0";
-                    blackoutOverlay.classList.add('active');
-                    setTimeout(() => {
-                        blackoutOverlay.classList.remove('active');
-                        document.body.classList.remove('blackout');
-                        gameContainer.style.opacity = "1";
-                        renderScene(choice.next);
-                    }, 2500);
-                    return;
-                }
                 if (choice.locked) {
                     playTenseSound();
                 } else if (state.phase === "甜蜜") {

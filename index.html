@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>非亲之禹 - 张泽禹</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; }
+        
+        body {
+            background-color: #0d1f15;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; color: #e0f2e9;
+        }
+
+        #game-container {
+            width: 960px; height: 640px;
+            background: linear-gradient(135deg, #1a2f22 0%, #0d1f15 100%);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 0 2px #2a4a36 inset;
+            overflow: hidden; position: relative;
+            display: flex; flex-direction: column;
+        }
+
+        /* 背景层 */
+        .bg-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=1000&auto=format&fit=crop');
+            background-size: cover; background-position: center;
+            opacity: 0.3; z-index: 0;
+            filter: blur(2px) brightness(0.6) hue-rotate(50deg);
+            transition: filter 0.5s;
+        }
+
+        /* 角色立绘容器 */
+        .character-area {
+            position: absolute; right: 20px; bottom: 180px;
+            width: 320px; height: 420px;
+            z-index: 1; border-radius: 15px; overflow: hidden;
+            border: 2px dashed #4a8c63; background: rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center;
+            transition: all 0.5s ease;
+        }
+
+        .character-area img {
+            width: 100%; height: 100%; object-fit: cover; display: none;
+        }
+
+        .character-area .placeholder-text {
+            color: #8ce0b0; text-align: center; font-size: 0.9rem; padding: 20px;
+        }
+
+        /* 上传按钮 */
+        #upload-btn-wrapper {
+            position: absolute; top: 20px; right: 20px; z-index: 5;
+        }
+
+        .upload-btn {
+            background: rgba(26, 47, 34, 0.9);
+            border: 1px solid #4a8c63;
+            color: #8ce0b0; padding: 8px 15px;
+            border-radius: 8px; cursor: pointer;
+            font-size: 0.85rem; transition: all 0.3s;
+            backdrop-filter: blur(4px);
+        }
+        .upload-btn:hover { background: #2a5a3a; color: #fff; border-color: #8ce0b0; }
+
+        /* 存档按钮组 */
+        .save-group {
+            position: absolute; top: 20px; right: 140px; z-index: 5;
+            display: flex; gap: 8px;
+        }
+
+        /* 状态栏 */
+        #status-bar {
+            position: absolute; top: 20px; left: 20px; z-index: 3;
+            background: rgba(13, 31, 21, 0.8);
+            padding: 8px 15px; border-radius: 20px;
+            border: 1px solid #3a6b4b; font-size: 0.9rem;
+            color: #8ce0b0; backdrop-filter: blur(4px);
+        }
+
+        /* 文本框 */
+        .text-box {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 210px;
+            background: linear-gradient(to top, rgba(13, 31, 21, 0.98) 0%, rgba(13, 31, 21, 0.8) 80%, transparent 100%);
+            z-index: 2; padding: 25px 40px 20px;
+            display: flex; flex-direction: column; justify-content: flex-end;
+            border-top: 2px solid #3a6b4b; backdrop-filter: blur(6px);
+        }
+
+        #speaker {
+            color: #8ce0b0; font-weight: bold; font-size: 1.2rem;
+            margin-bottom: 8px; text-shadow: 0 0 10px rgba(140, 224, 176, 0.5);
+        }
+
+        #dialogue {
+            font-size: 1.05rem; line-height: 1.6; color: #e0f2e9;
+            min-height: 3.5em; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        }
+
+        /* 选项区 */
+        #choices {
+            display: flex; flex-direction: column; gap: 8px;
+            margin-top: 10px; width: 70%; margin-left: auto; margin-right: auto; z-index: 3;
+        }
+
+        .choice-btn {
+            background: rgba(26, 47, 34, 0.85);
+            border: 1px solid #4a8c63;
+            color: #c1e6d3; padding: 10px 20px;
+            border-radius: 8px; cursor: pointer;
+            transition: all 0.3s ease; font-size: 0.95rem;
+            text-align: left; backdrop-filter: blur(4px);
+        }
+
+        .choice-btn:hover {
+            background: #2a5a3a; border-color: #8ce0b0;
+            color: #ffffff; box-shadow: 0 0 15px rgba(140, 224, 176, 0.5);
+            transform: translateX(5px);
+        }
+
+        /* 强迫性唯一选项的样式 */
+        .choice-btn.locked {
+            background: rgba(60, 20, 20, 0.9);
+            border-color: #8b3a3a; color: #ffcccc;
+            cursor: not-allowed;
+            animation: pulseRed 1.5s infinite;
+            font-weight: bold;
+        }
+        .choice-btn.locked:hover { transform: none; box-shadow: none; }
+
+        @keyframes pulseRed {
+            0% { box-shadow: 0 0 0px rgba(139, 58, 58, 0); }
+            50% { box-shadow: 0 0 20px rgba(139, 58, 58, 0.8); }
+            100% { box-shadow: 0 0 0px rgba(139, 58, 58, 0); }
+        }
+
+        /* 隐藏的文件输入 */
+        #file-upload { display: none; }
+
+        /* 心跳动画 */
+        .heart-beat { animation: heartbeat 1.5s infinite; }
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .glow-text { color: #b3ffd9; text-shadow: 0 0 15px rgba(140, 224, 176, 0.9); }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="bg-layer" id="bg-layer"></div>
+    
+    <div id="status-bar">好感度: <span id="favor">0</span>% | 路线: 对抗</div>
+
+    <!-- 角色立绘区域 -->
+    <div class="character-area" id="character-area">
+        <div class="placeholder-text" id="placeholder-text">请点击右上角<br>「上传泽禹照片」<br>（仅本地显示）</div>
+        <img id="char-img" alt="张泽禹">
+    </div>
+
+    <!-- 上传与存档按钮 -->
+    <div id="upload-btn-wrapper">
+        <button class="upload-btn" onclick="document.getElementById('file-upload').click()">📷 上传泽禹照片</button>
+        <input type="file" id="file-upload" accept="image/*">
+    </div>
+
+    <div class="save-group">
+        <button class="upload-btn" onclick="saveGame()">💾 存档</button>
+        <button class="upload-btn" onclick="loadGame()">📂 读档</button>
+    </div>
+
+    <div class="text-box" id="text-box">
+        <div id="speaker">张泽禹</div>
+        <div id="dialogue">“别碰我东西。就算你妈嫁进来了，你也别想管我叫哥。”</div>
+        <div id="choices"></div>
+    </div>
+</div>
+
+<script>
+    // 游戏核心状态
+    let state = {
+        favor: 0,
+        sceneId: "start",
+        phase: "对抗"
+    };
+
+    // DOM
+    const dialogueEl = document.getElementById('dialogue');
+    const speakerEl = document.getElementById('speaker');
+    const choicesEl = document.getElementById('choices');
+    const favorEl = document.getElementById('favor');
+    const statusBar = document.getElementById('status-bar');
+    const charImg = document.getElementById('char-img');
+    const placeholderText = document.getElementById('placeholder-text');
+    const bgLayer = document.getElementById('bg-layer');
+    const textBox = document.getElementById('text-box');
+
+    // ============ 本地图片上传 ============
+    document.getElementById('file-upload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                charImg.src = event.target.result;
+                charImg.style.display = 'block';
+                placeholderText.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // ============ 存档/读档 ============
+    function saveGame() {
+        const saveData = {
+            favor: state.favor,
+            sceneId: state.sceneId,
+            imgSrc: charImg.src ? charImg.src : "",
+            imgDisplay: charImg.style.display
+        };
+        localStorage.setItem("zhangzeyu_save", JSON.stringify(saveData));
+        alert("💾 已存档！下次打开点击「读档」即可继续。");
+    }
+
+    function loadGame() {
+        const saved = localStorage.getItem("zhangzeyu_save");
+        if (!saved) { alert("没有找到存档，请先开始游戏并保存。"); return; }
+        const data = JSON.parse(saved);
+        state.favor = data.favor;
+        state.sceneId = data.sceneId;
+        
+        if (data.imgSrc) {
+            charImg.src = data.imgSrc;
+            charImg.style.display = data.imgDisplay || 'block';
+            placeholderText.style.display = 'none';
+        }
+
+        alert("📂 读档成功！");
+        renderScene(data.sceneId);
+    }
+
+    // ============ 剧情数据 ============
+    const story = {
+        start: {
+            speaker: "张泽禹",
+            text: "“别碰我东西。就算你妈嫁进来了，你也别想管我叫哥。”\n他在林间小路上猛地回头，那头白发在绿叶中格外刺眼。他穿着黑色背心，背着登山包，眼神里满是桀骜不驯。",
+            choices: [
+                { text: "“谁稀罕管你，别自作多情。”", next: "confrontation", favor: 5 },
+                { text: "“张泽禹，你头发上沾了树叶，我帮你拿掉。”", next: "sweet_1", favor: 10 },
+                { text: "沉默地跟上他，不管他说什么。", next: "sweet_1", favor: 2 }
+            ]
+        },
+        confrontation: {
+            speaker: "张泽禹",
+            text: "他愣了一下，随即冷哼一声：“嘴挺硬。”\n但他没再赶你走，只是加快了步伐。可每次遇到陡坡，他都会悄无声息地放慢脚步。有一次你脚下打滑，他一把拽住了你的手腕，力道很重。",
+            choices: [
+                { text: "“你不是不管我吗？”", next: "sweet_1", favor: 8 },
+                { text: "看着他握紧的手，心跳加速。", next: "sweet_1", favor: 12 }
+            ]
+        },
+        sweet_1: {
+            speaker: "张泽禹",
+            text: "傍晚露营。他递给你一杯热水，眼神飘忽：“老头让我照顾你，别多想。”\n火光映照着他的侧脸，你发现他耳朵红了。那个对你冷言冷语的人，此刻正悄悄把外套披在你肩上。",
+            choices: [
+                { text: "“张泽禹，你是不是有点喜欢我？”", next: "sweet_2", favor: 15 },
+                { text: "默默靠在他肩上，享受这份静谧。", next: "sweet_2", favor: 10 }
+            ]
+        },
+        sweet_2: {
+            speaker: "张泽禹",
+            text: "他身体僵硬了一瞬，却没有推开你。\n“少说这种话……”他声音沙哑，低头凑近你的唇。这是一个笨拙又青涩的吻，带着山间草木的味道，和压抑不住的占有欲。他吻得很用力，像是要把你吞掉。",
+            choices: [
+                { text: "回吻他，双手环住他的脖子。", next: "obsession_1", favor: 20 },
+                { text: "轻轻推开他：“我们这样……不太好吧？”", next: "obsession_1", favor: 5 }
+            ]
+        },
+        // ============ 开始强迫选择阶段 ============
+        obsession_1: {
+            speaker: "张泽禹",
+            text: "从那天起，他变了。\n他开始疯狂地查你的手机，不允许你和任何男生说话。某天放学，你发现他把你锁在他的房间里。他眼神阴暗，手指摩挲着你的脖颈：“外面的人都不怀好意……你只能待在我身边，哪也别去。”",
+            choices: [
+                { text: "“你疯了，放我出去！”", next: "end_elope", favor: -10 },
+                { text: "“好，只要是你，我就留下。”", next: "end_wedding", favor: 25 },
+                { text: "试图和他讲道理。", next: "obsession_force", favor: 0 }
+            ]
+        },
+        // ============ 强制唯一选项 ============
+        obsession_force: {
+            speaker: "张泽禹",
+            text: "“讲道理？”他轻笑一声，扣住你的手腕，将你拉近。\n“我不管什么道理。我只要你。”他的呼吸打在你脸上，眼底是深不见底的偏执。你意识到，所有的退路都被他堵死了。",
+            choices: [
+                { text: "【你只能选这一个】留在他身边。", next: "end_wedding", favor: 30, locked: true }
+            ]
+        },
+        end_elope: {
+            speaker: "旁白",
+            text: "你哭着挣扎，他却突然松开手，满脸痛苦。\n“对不起……我只是太害怕失去你。”他低下头，像个做错事的孩子。最后，他带着你逃离了这个家，去了一个谁也不认识你们的小镇。\n私奔的日子很苦，但他在清晨吻你时的温柔，让你觉得一切都值得。【私奔线达成】",
+            choices: [
+                { text: "重新开始", next: "start", favor: 0 }
+            ]
+        },
+        end_wedding: {
+            speaker: "旁白",
+            text: "你的顺从让他冷静下来。他跪在你面前，拿出一枚早已准备好的戒指。\n“我知道我不够好，但我会用一辈子去证明。”\n你们的爱情最终得到了家人的祝福。婚礼那天，他穿着西装，眼神里再没有戾气，只有深情。洞房花烛夜，他吻着你，轻声说：“老婆，终于名正言顺了。”【明媒正娶·结婚线达成】",
+            choices: [
+                { text: "重新开始", next: "start", favor: 0 }
+            ]
+        }
+    };
+
+    // ============ 渲染逻辑 ============
+    function renderScene(sceneId) {
+        const scene = story[sceneId];
+        if (!scene) return;
+
+        state.sceneId = sceneId;
+
+        // 好感度更新
+        if (scene.favor !== undefined) {
+            state.favor += scene.favor;
+            if (state.favor < 0) state.favor = 0;
+            if (state.favor > 100) state.favor = 100;
+            favorEl.textContent = state.favor;
+        }
+
+        // 阶段变化
+        if (state.favor < 30) {
+            state.phase = "对抗";
+            statusBar.innerHTML = `好感度: ${state.favor}% | 路线: 对抗`;
+            bgLayer.style.filter = "blur(2px) brightness(0.6) hue-rotate(50deg)";
+        } else if (state.favor < 70) {
+            state.phase = "甜蜜";
+            statusBar.innerHTML = `好感度: ${state.favor}% | 路线: 甜蜜`;
+            bgLayer.style.filter = "blur(2px) brightness(0.7) hue-rotate(50deg) saturate(1.2)";
+        } else {
+            state.phase = "占有";
+            statusBar.innerHTML = `好感度: ${state.favor}% | 路线: 占有`;
+            bgLayer.style.filter = "blur(3px) brightness(0.4) hue-rotate(50deg) contrast(1.2)";
+        }
+
+        // 文本渲染
+        speakerEl.textContent = scene.speaker;
+        dialogueEl.textContent = scene.text;
+
+        // 结局特效
+        if (sceneId.includes("end")) {
+            dialogueEl.classList.add("glow-text");
+            textBox.classList.add("heart-beat");
+        } else {
+            dialogueEl.classList.remove("glow-text");
+            textBox.classList.remove("heart-beat");
+        }
+
+        // 选项渲染
+        choicesEl.innerHTML = '';
+        scene.choices.forEach((choice, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            
+            // 判断是否是锁定选项
+            if (choice.locked) {
+                btn.classList.add('locked');
+                // 如果只有一个选项，直接给它加上呼吸红光效果
+                if (scene.choices.length === 1) {
+                    btn.style.animation = "pulseRed 1.5s infinite";
+                }
+            }
+
+            btn.textContent = choice.text;
+            btn.onclick = () => {
+                // 如果是锁定选项，做一个额外的反馈（可选）
+                if (choice.locked) {
+                    // 直接推进，不需要额外逻辑，但可以加一点视觉反馈
+                }
+                
+                if (choice.favor !== undefined) {
+                    state.favor += choice.favor;
+                    if (state.favor < 0) state.favor = 0;
+                    if (state.favor > 100) state.favor = 100;
+                    favorEl.textContent = state.favor;
+                }
+                renderScene(choice.next);
+            };
+            choicesEl.appendChild(btn);
+        });
+    }
+
+    // 启动游戏
+    renderScene(state.sceneId);
+
+    // 提示：如果用户上传了图片，存档时会保存图片的Base64数据，读档时自动恢复
+</script>
+</body>
+      </html>

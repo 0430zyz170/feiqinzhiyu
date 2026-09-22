@@ -10,7 +10,9 @@
             background-color: #0d1f15;
             display: flex; justify-content: center; align-items: center;
             min-height: 100vh; color: #e0f2e9; padding: 10px;
+            transition: background-color 0.5s ease;
         }
+        body.blackout { background-color: #000; }
         #game-container {
             width: 100%; max-width: 480px;
             display: flex; flex-direction: column;
@@ -19,13 +21,14 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 0 2px #2a4a36 inset;
             overflow: hidden;
             max-height: 95vh;
+            transition: all 0.5s ease;
         }
         .top-section {
             position: relative; width: 100%; height: 200px;
             background-image: url('https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=1000&auto=format&fit=crop');
             background-size: cover; background-position: center;
             display: flex; justify-content: center; align-items: flex-end;
-            overflow: hidden; transition: filter 0.6s ease;
+            overflow: hidden; transition: filter 0.6s ease, opacity 0.6s ease;
             flex-shrink: 0;
         }
         .top-section::before {
@@ -66,7 +69,7 @@
             width: 100%; padding: 16px 18px 20px;
             background: rgba(13, 31, 21, 0.98); border-top: 2px solid #3a6b4b;
             display: flex; flex-direction: column; gap: 10px;
-            overflow-y: auto;
+            overflow-y: auto; transition: all 0.5s ease;
         }
         #speaker {
             color: #8ce0b0; font-weight: bold; font-size: 0.85rem;
@@ -102,6 +105,33 @@
             100% { box-shadow: 0 0 0px rgba(139,58,58,0); }
         }
         #file-upload { display: none; }
+
+        /* 黑屏 + 红色“我爱你” */
+        #blackout-overlay {
+            position: fixed; inset: 0;
+            background: #000;
+            display: none;
+            justify-content: center; align-items: center;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        #blackout-overlay.active {
+            display: flex;
+            pointer-events: auto;
+        }
+        .love-text {
+            color: #ff1a1a;
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000, 0 0 80px #ff0000;
+            animation: lovePulse 0.8s infinite alternate;
+            letter-spacing: 8px;
+        }
+        @keyframes lovePulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            100% { transform: scale(1.08); opacity: 1; }
+        }
+
         .glow-text { color: #b3ffd9; text-shadow: 0 0 15px rgba(140,224,176,0.9); }
         .heart-beat { animation: heartbeat 1.5s infinite; }
         @keyframes heartbeat {
@@ -132,8 +162,64 @@
     </div>
 </div>
 <input type="file" id="file-upload" accept="image/*">
+<div id="blackout-overlay"><div class="love-text">我 爱 你</div></div>
 
 <script>
+    // ========== 音效 ==========
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    function initAudio() {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function playClickSound() {
+        initAudio();
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    }
+    function playSweetSound() {
+        initAudio();
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+    }
+    function playTenseSound() {
+        initAudio();
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+    }
+    function playHeartbeatSound() {
+        initAudio();
+        for (let i = 0; i < 2; i++) {
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(60, audioCtx.currentTime + i * 0.3);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime + i * 0.3);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.3 + 0.25);
+            osc.start(audioCtx.currentTime + i * 0.3);
+            osc.stop(audioCtx.currentTime + i * 0.3 + 0.25);
+        }
+    }
+
+    // ========== 状态 ==========
     let state = { favor: 0, sceneId: "start", phase: "对抗" };
     const dialogueEl = document.getElementById('dialogue');
     const speakerEl = document.getElementById('speaker');
@@ -144,7 +230,10 @@
     const placeholderText = document.getElementById('placeholder-text');
     const topSection = document.getElementById('top-section');
     const bottomSection = document.getElementById('bottom-section');
+    const gameContainer = document.getElementById('game-container');
+    const blackoutOverlay = document.getElementById('blackout-overlay');
 
+    // ========== 图片上传 ==========
     document.getElementById('file-upload').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
@@ -158,6 +247,7 @@
         }
     });
 
+    // ========== 存档 / 读档 ==========
     function saveGame() {
         const saveData = {
             favor: state.favor, sceneId: state.sceneId,
@@ -167,7 +257,6 @@
         localStorage.setItem("zhangzeyu_save", JSON.stringify(saveData));
         alert("💾 已存档！下次打开点击「读档」即可继续。");
     }
-
     function loadGame() {
         const saved = localStorage.getItem("zhangzeyu_save");
         if (!saved) { alert("没有找到存档，请先开始游戏并保存。"); return; }
@@ -182,90 +271,119 @@
         renderScene(data.sceneId);
     }
 
+    // ================= 扩充后的剧情（结局保持不变） =================
     const story = {
+        // ========== 起始：林间初遇 ==========
         start: {
             speaker: "张泽禹",
             text: "“别碰我东西。就算你妈嫁进来了，你也别想管我叫哥。”\n他在林间小路上猛地回头，那头白发在绿叶中格外刺眼。他穿着黑色背心，背着登山包，眼神里满是桀骜不驯。你妈刚嫁进张家，这是你第一次和他单独相处。",
             choices: [
-                { text: "“谁稀罕管你，别自作多情。”", next: "confrontation_cold", favor: 5 },
-                { text: "“张泽禹，你头发上沾了树叶，我帮你拿掉。”", next: "sweet_touch", favor: 10 },
-                { text: "沉默地跟上他，不管他说什么。", next: "silent_follow", favor: 2 }
+                { text: "“谁稀罕管你，别自作多情。”", next: "cold_1", favor: 5 },
+                { text: "“张泽禹，你头发上沾了树叶，我帮你拿掉。”", next: "touch_1", favor: 10 },
+                { text: "沉默地跟上他，不管他说什么。", next: "silent_1", favor: 2 }
             ]
         },
-        confrontation_cold: {
+
+        // ========== 对抗线（扩充） ==========
+        cold_1: {
             speaker: "张泽禹",
             text: "他愣了一下，随即冷笑：“嘴挺硬。”\n他加快步伐，像是要把你甩掉。可你发现，每次遇到陡坡，他都会悄无声息地放慢脚步。走到一处悬崖边，他忽然回头：“走不动就直说，别硬撑。”",
             choices: [
-                { text: "“谁硬撑了？我好得很。”", next: "cold_stubborn", favor: 3 },
-                { text: "“那你走慢点啊，我跟着呢。”", next: "cold_soften", favor: 8 }
+                { text: "“谁硬撑了？我好得很。”", next: "cold_2a", favor: 3 },
+                { text: "“那你走慢点啊，我跟着呢。”", next: "cold_2b", favor: 8 }
             ]
         },
-        cold_stubborn: {
+        cold_2a: {
             speaker: "张泽禹",
-            text: "他盯着你看了两秒，眼神里闪过一丝无奈。\n“随你。”他转身继续走，但肩膀明显垮了下来。那一刻你忽然觉得，他那副嚣张的样子，可能只是怕被人看出脆弱。",
+            text: "他盯着你看了两秒，眼神里闪过一丝无奈。\n“随你。”他转身继续走，但肩膀明显垮了下来。那一刻你忽然觉得，他那副嚣张的样子，可能只是怕被人看出脆弱。\n走了十分钟，他忽然停下，从包里掏出一瓶水，头也不回地递给你。",
             choices: [
-                { text: "追上去，拽住他的衣角。", next: "cold_chase", favor: 12 },
-                { text: "继续嘴硬，各走各的。", next: "end_distant", favor: -5 }
+                { text: "追上去，拽住他的衣角。", next: "cold_3", favor: 12 },
+                { text: "接过水，继续嘴硬：“我不渴。”", next: "end_distant", favor: -5 }
             ]
         },
-        cold_chase: {
-            speaker: "张泽禹",
-            text: "他脚步一顿，低头看着你拽住他衣角的手。\n“干嘛？”语气还是凶的，耳朵却红了。他没甩开你，只是闷声说：“……跟紧点，别丢了。”\n这是你们之间，第一次没有剑拔弩张的对话。",
-            choices: [
-                { text: "“那你以后别对我那么凶了。”", next: "sweet_tentative", favor: 10 },
-                { text: "“放心，我命硬，丢不了。”", next: "sweet_tentative", favor: 5 }
-            ]
-        },
-        cold_soften: {
+        cold_2b: {
             speaker: "张泽禹",
             text: "他脚步顿了一下，回头看你：“……你倒是会顺杆爬。”\n嘴上嫌弃，但他真的放慢了速度，甚至在你喘气的时候停下来假装看风景。你们之间第一次有了某种默契。",
             choices: [
-                { text: "“张泽禹，你其实挺会照顾人的。”", next: "sweet_tentative", favor: 12 },
-                { text: "什么都不说，就安静跟着他。", next: "sweet_tentative", favor: 6 }
+                { text: "“张泽禹，你其实挺会照顾人的。”", next: "cold_3", favor: 12 },
+                { text: "什么都不说，就安静跟着他。", next: "cold_3", favor: 6 }
             ]
         },
-        end_distant: {
-            speaker: "旁白",
-            text: "一路上你们再没说一句话。\n回到家，他径直回了房间，门关得很重。之后的日子，你们像两条平行线，他不再管你，你也不再招惹他。偶尔在饭桌上对视，他会先移开视线。\n有些话没说出口，就再也没机会说了。【渐行渐远·擦肩线】",
-            choices: [{ text: "重新开始", next: "start", favor: 0 }]
+        cold_3: {
+            speaker: "张泽禹",
+            text: "傍晚，他在溪边停下脚步，蹲下身洗脸。水珠顺着他的下颌线滑下来，你第一次发现他的睫毛很长。\n“看什么看？”他察觉到你的视线，语气还是凶的，但耳根已经红了。他甩了甩手上的水，站起身时故意往你这边偏了一下，水珠溅到你脸上。",
+            choices: [
+                { text: "“张泽禹，你故意的是不是？”", next: "cold_4", favor: 10 },
+                { text: "“看你长得好看，不行吗？”", next: "sweet_1", favor: 15 }
+            ]
         },
-        silent_follow: {
+        cold_4: {
+            speaker: "张泽禹",
+            text: "他笑了，是那种少年人特有的、毫无防备的笑。\n“是啊，故意的，怎么了？”他挑眉看你，语气里带着一点调侃。你忽然发现，这个人如果不凶的话，其实挺好看的。",
+            choices: [
+                { text: "“幼稚。”转身走开。", next: "sweet_1", favor: 5 },
+                { text: "“那你多溅几次，我不介意。”", next: "sweet_1", favor: 12 }
+            ]
+        },
+
+        // ========== 沉默跟随线（扩充） ==========
+        silent_1: {
             speaker: "张泽禹",
             text: "你没回嘴，只是默默跟在他身后。\n走了一段，他忽然停下来：“你怎么不说话？”你看着他，他反倒不自在了，别开脸：“……哑巴了？”",
             choices: [
-                { text: "“你不让我说话，我就不说了。”", next: "sweet_tentative", favor: 8 },
-                { text: "“我在看你，你耳根红了。”", next: "sweet_touch", favor: 12 }
+                { text: "“你不让我说话，我就不说了。”", next: "silent_2", favor: 8 },
+                { text: "“我在看你，你耳根红了。”", next: "touch_1", favor: 12 }
             ]
         },
-        sweet_touch: {
+        silent_2: {
+            speaker: "张泽禹",
+            text: "他被你噎了一下，半天没说话。\n过了一会儿，他闷闷地开口：“……我也不是那个意思。”他走得比刚才慢了些，像是在等你跟上来。",
+            choices: [
+                { text: "“那你是什么意思？”", next: "touch_1", favor: 10 },
+                { text: "“知道了，哥。”", next: "touch_1", favor: 8 }
+            ]
+        },
+
+        // ========== 触碰线（甜蜜，扩充） ==========
+        touch_1: {
             speaker: "张泽禹",
             text: "你伸手，指尖碰到他蓬松的白发，轻轻把那片绿叶拿下来。\n他整个人僵住了，耳朵肉眼可见地变红。“你……”他想说什么，却卡在喉咙里。山风吹过，你们之间的距离近得能听见彼此的呼吸。",
             choices: [
-                { text: "“好了，拿掉了。”转身假装若无其事。", next: "sweet_tentative", favor: 8 },
-                { text: "“张泽禹，你脸红什么？”", next: "sweet_tease", favor: 12 }
+                { text: "“好了，拿掉了。”转身假装若无其事。", next: "touch_1b", favor: 8 },
+                { text: "“张泽禹，你脸红什么？”", next: "touch_2", favor: 12 }
             ]
         },
-        sweet_tease: {
+        touch_1b: {
+            speaker: "张泽禹",
+            text: "你刚转身，手腕就被他抓住了。\n“谁让你碰的？”他声音有点哑，可手上没用力。“……下次别乱碰。”他说完就松开，快步往前走，耳根红得不像话。",
+            choices: [
+                { text: "追上去：“那你耳朵怎么红了？”", next: "touch_2", favor: 12 },
+                { text: "站在原地，看着他的背影笑。", next: "sweet_1", favor: 8 }
+            ]
+        },
+        touch_2: {
             speaker: "张泽禹",
             text: "“谁脸红了？你眼睛有问题。”他嘴上不承认，却一把抓住你还没收回的手腕。\n掌心很烫。“……别乱碰我。”他说得很凶，但手指没有松开。",
             choices: [
-                { text: "“那你先放开我啊。”", next: "sweet_handhold", favor: 10 },
-                { text: "反手握住他：“我不放。”", next: "sweet_handhold", favor: 15 }
+                { text: "“那你先放开我啊。”", next: "touch_3", favor: 10 },
+                { text: "反手握住他：“我不放。”", next: "touch_3", favor: 15 }
             ]
         },
-        sweet_handhold: {
+        touch_3: {
             speaker: "张泽禹",
-            text: "他低头看着你们交握的手，沉默了很久。\n“……你知道你在干什么吗？”他声音有点哑。你点头，他忽然笑了，是那种第一次真正放松的笑。“行，那你别后悔。”",
+            text: "他低头看着你们交握的手，沉默了很久。\n“……你知道你在干什么吗？”他声音有点哑。你点头，他忽然笑了，是那种第一次真正放松的笑。“行，那你别后悔。”\n他牵着你的手走了一段，直到前面有人经过才松开。",
             choices: [
-                { text: "“不后悔。”", next: "sweet_camp", favor: 12 },
-                { text: "“你先别得意，看表现。”", next: "sweet_camp", favor: 8 }
+                { text: "“不后悔。”", next: "sweet_1", favor: 12 },
+                { text: "“你先别得意，看表现。”", next: "sweet_1", favor: 8 }
             ]
         },
-        sweet_tentative: {
+
+        // ========== 甜蜜线（扩充） ==========
+        sweet_1: {
             speaker: "张泽禹",
             text: "天色渐暗，你们在山上露营。他递给你一杯热水，眼神飘忽：“老头让我照顾你，别多想。”\n火光映着他的侧脸。那个对你冷言冷语的人，此刻正悄悄把外套披在你肩上。",
             choices: [
-                { text: "“张泽禹，你是不是有点喜欢我？”", next: "sweet_confess", favor: 15 },
+                { text: "“张泽禹，你是不是有点喜欢我？”", next: "sweet_2", favor: 15 },
                 { text: "默默靠在他肩上，享受这份静谧。", next: "sweet_lean", favor: 10 }
             ]
         },
@@ -273,27 +391,29 @@
             speaker: "张泽禹",
             text: "你靠在他肩上，他身体僵了一瞬，却没有推开你。\n过了很久，他低声说：“……就这一次。”可他没动，任由你靠着，连呼吸都放轻了。",
             choices: [
-                { text: "“以后也可以吗？”", next: "sweet_confess", favor: 12 },
-                { text: "“嗯，就这一次。”", next: "sweet_confess", favor: 6 }
+                { text: "“以后也可以吗？”", next: "sweet_2", favor: 12 },
+                { text: "“嗯，就这一次。”", next: "sweet_2", favor: 6 }
             ]
         },
-        sweet_confess: {
+        sweet_2: {
             speaker: "张泽禹",
             text: "“喜欢？”他重复了一遍这个词，像是第一次认真思考。\n然后他转过头，认真地看你：“我不知道那算不算喜欢。但你要是不在了，我会很难受。”\n他低下头，凑近你的唇。这是一个笨拙又青涩的吻，带着山间草木的味道。",
             choices: [
-                { text: "回吻他，双手环住他的脖子。", next: "sweet_kiss_deep", favor: 18 },
-                { text: "轻轻推开他：“我们这样……不太好吧？”", next: "obsession_soft", favor: 5 }
+                { text: "回吻他，双手环住他的脖子。", next: "sweet_3", favor: 18 },
+                { text: "轻轻推开他：“我们这样……不太好吧？”", next: "obsession_1", favor: 5 }
             ]
         },
-        sweet_kiss_deep: {
+        sweet_3: {
             speaker: "张泽禹",
             text: "你的回应让他呼吸一滞。他扣住你的后脑，吻得更深、更用力，像是压抑了太久的东西终于决堤。\n“别推开我……”他贴着你的唇，声音发颤。这一夜，你们在帐篷里靠得很近，近到能听见彼此的心跳。",
             choices: [
-                { text: "“张泽禹，我好像也喜欢你。”", next: "obsession_soft", favor: 20 },
-                { text: "“我们……回家再说。”", next: "obsession_soft", favor: 10 }
+                { text: "“张泽禹，我好像也喜欢你。”", next: "obsession_1", favor: 20 },
+                { text: "“我们……回家再说。”", next: "obsession_1", favor: 10 }
             ]
         },
-        obsession_soft: {
+
+        // ========== 占有线（扩充） ==========
+        obsession_1: {
             speaker: "张泽禹",
             text: "从那天起，他变了。\n他开始在意你和谁说话，在意你几点回家。某天你发现他坐在你床边，翻着你的手机。“你干嘛？”你问。他抬头，眼神里是藏不住的慌张：“……你别离开我。”",
             choices: [
@@ -326,6 +446,14 @@
                 { text: "“我们慢慢来。”", next: "end_elope", favor: 5 }
             ]
         },
+        obsession_break: {
+            speaker: "张泽禹",
+            text: "你挣扎着推开他，眼泪掉下来。\n他忽然慌了，像是被烫到一样松开手。“……对不起。”他退后两步，脸色苍白，“我只是怕你走。”\n那一夜他睡在门口，没再拦你。第二天，他消失了整整一天。",
+            choices: [
+                { text: "去找他。", next: "end_elope", favor: 10 },
+                { text: "趁他不在，收拾行李离开。", next: "end_distant", favor: 0 }
+            ]
+        },
         obsession_lock: {
             speaker: "张泽禹",
             text: "某天放学，你发现门打不开了。\n他坐在房间里，钥匙攥在手里。“外面的人都不怀好意。”他眼神暗下来，手指摩挲着你的脖颈，“你只能待在我身边，哪也别去。”",
@@ -335,46 +463,64 @@
                 { text: "试图和他讲道理。", next: "obsession_force", favor: 0 }
             ]
         },
-        obsession_break: {
-            speaker: "张泽禹",
-            text: "你挣扎着推开他，眼泪掉下来。\n他忽然慌了，像是被烫到一样松开手。“……对不起。”他退后两步，脸色苍白，“我只是怕你走。”\n那一夜他睡在门口，没再拦你。第二天，他消失了整整一天。",
-            choices: [
-                { text: "去找他。", next: "end_elope", favor: 10 },
-                { text: "趁他不在，收拾行李离开。", next: "end_distant", favor: 0 }
-            ]
-        },
+
+        // ========== 强制唯一选项：黑屏我爱你 ==========
         obsession_force: {
             speaker: "张泽禹",
             text: "“讲道理？”他轻笑一声，扣住你的手腕，将你拉近。\n“我不管什么道理。我只要你。”他的呼吸打在你脸上，眼底是深不见底的偏执。你意识到，所有的退路都被他堵死了。",
             choices: [
-                { text: "【你只能选这一个】留在他身边。", next: "end_married", favor: 30, locked: true }
+                { text: "【你只能选这一个】留在他身边。", next: "obsession_dark", favor: 30, locked: true }
             ]
+        },
+        obsession_dark: {
+            speaker: "张泽禹",
+            text: "屏幕陷入黑暗。\n红色的字迹从四面八方涌来，像血一样铺满整个视野——\n“我爱你。”“我爱你。”“我爱你。”“我爱你。”“我爱你。”“我爱你。”“我爱你。”\n你逃不掉了。他从背后抱住你，下巴抵在你肩上，声音温柔得令人战栗：“现在，你是我一个人的了。”",
+            choices: [
+                { text: "【接受】成为他的人。", next: "end_married", favor: 20, blackout: true }
+            ]
+        },
+
+        // ========== 独立结局（保持不变） ==========
+        end_distant: {
+            speaker: "旁白",
+            text: "一路上你们再没说一句话。\n回到家，他径直回了房间，门关得很重。之后的日子，你们像两条平行线，他不再管你，你也不再招惹他。偶尔在饭桌上对视，他会先移开视线。\n有些话没说出口，就再也没机会说了。【渐行渐远·擦肩线】",
+            choices: [{ text: "重新开始", next: "start", favor: 0, reset: true }]
+        },
+        end_elope: {
+            speaker: "旁白",
+            text: "你去找他，在小镇的河边找到蹲着的他。\n“我以为你走了。”他声音沙哑。你蹲下来，握住他的手：“我们一起走。”\n你们离开了家，去了一个谁也不认识的地方。日子很苦，但他在清晨吻你时的温柔，让你觉得一切都值得。\n多年后，他抱着你，在你耳边说：“谢谢你当年没有松开我的手。”【私奔线·此生共渡】",
+            choices: [{ text: "重新开始", next: "start", favor: 0, reset: true }]
+        },
+        end_married: {
+            speaker: "旁白",
+            text: "他跪在你面前，拿出一枚准备好的戒指。\n“我知道我不够好，但我会用一辈子去证明。”\n你们的爱情最终得到了家人的祝福。婚礼那天，他穿着西装，眼神里再没有戾气，只有深情。洞房花烛夜，他吻着你，轻声说：“老婆，终于名正言顺了。”【明媒正娶·结婚线】",
+            choices: [{ text: "重新开始", next: "start", favor: 0, reset: true }]
         },
         end_let_go: {
             speaker: "旁白",
             text: "你看着他通红的眼眶，终于说出了那句一直没敢说的话：“张泽禹，你这样我们都会痛苦。”\n他愣了很久，最后松开了手，声音沙哑：“……那你走吧。”\n他送你到车站，一路没说话。车开动时，你看见他站在原地，白发被风吹乱，像一棵被留在原地的树。\n很多年后你听说，他一直没有再对谁动过心。【温柔放手线】",
-            choices: [{ text: "重新开始", next: "start", favor: 0 }]
+            choices: [{ text: "重新开始", next: "start", favor: 0, reset: true }]
         },
         end_salvation: {
             speaker: "旁白",
             text: "你们一起去了心理咨询。他一开始很抗拒，但每次出来都会问你：“我是不是好一点了？”\n慢慢地，他学会了在你和别人说话时松开攥紧的拳头，学会了说“你去吧，我等你”。\n某个黄昏，他忽然从背后抱住你，下巴搁在你肩上：“谢谢你没放弃我。”\n他不再是那个困住你的人，而是和你并肩站在光里的人。【双向救赎线】",
-            choices: [{ text: "重新开始", next: "start", favor: 0 }]
-        },
-        end_elope: {
-            speaker: "旁白",
-            text: "你去找他，在小镇的河边找到蹲着的他。\n“我以为你走了。”他声音沙哑。你蹲下来，握住他的手：“我们一起走。”\n你们离开了家，去了一个谁也不认识的地方。日子很苦，但他在清晨吻你时的温柔，让你觉得一切都值得。【私奔线·此生共渡】",
-            choices: [{ text: "重新开始", next: "start", favor: 0 }]
-        },
-        end_married: {
-            speaker: "旁白",
-            text: "你的顺从让他冷静下来。他跪在你面前，拿出一枚准备好的戒指。\n“我知道我不够好，但我会用一辈子去证明。”\n你们的爱情最终得到了家人的祝福。婚礼那天，他穿着西装，眼神里再没有戾气，只有深情。洞房花烛夜，他吻着你，轻声说：“老婆，终于名正言顺了。”【明媒正娶·结婚线】",
-            choices: [{ text: "重新开始", next: "start", favor: 0 }]
+            choices: [{ text: "重新开始", next: "start", favor: 0, reset: true }]
         }
     };
 
+    // ========== 渲染 ==========
     function renderScene(sceneId) {
         const scene = story[sceneId];
         if (!scene) return;
+
+        if (sceneId === "start") {
+            state.favor = 0;
+            state.phase = "对抗";
+            document.body.classList.remove('blackout');
+            gameContainer.style.opacity = "1";
+            blackoutOverlay.classList.remove('active');
+        }
+
         state.sceneId = sceneId;
 
         if (scene.favor !== undefined) {
@@ -384,6 +530,7 @@
             favorEl.textContent = state.favor;
         }
 
+        // 隐藏结局触发
         if (sceneId === "obsession_break" && state.favor >= 60) {
             scene.choices = [{ text: "“张泽禹，你这样我们都会痛苦。”", next: "end_let_go", favor: 0 }];
         }
@@ -418,6 +565,7 @@
         if (sceneId.includes("end")) {
             dialogueEl.classList.add("glow-text");
             bottomSection.classList.add("heart-beat");
+            playHeartbeatSound();
         } else {
             dialogueEl.classList.remove("glow-text");
             bottomSection.classList.remove("heart-beat");
@@ -435,6 +583,26 @@
             }
             btn.textContent = choice.text;
             btn.onclick = () => {
+                if (choice.blackout) {
+                    playTenseSound();
+                    document.body.classList.add('blackout');
+                    gameContainer.style.opacity = "0";
+                    blackoutOverlay.classList.add('active');
+                    setTimeout(() => {
+                        blackoutOverlay.classList.remove('active');
+                        document.body.classList.remove('blackout');
+                        gameContainer.style.opacity = "1";
+                        renderScene(choice.next);
+                    }, 2500);
+                    return;
+                }
+                if (choice.locked) {
+                    playTenseSound();
+                } else if (state.phase === "甜蜜") {
+                    playSweetSound();
+                } else {
+                    playClickSound();
+                }
                 if (choice.favor !== undefined) {
                     state.favor += choice.favor;
                     if (state.favor < 0) state.favor = 0;
